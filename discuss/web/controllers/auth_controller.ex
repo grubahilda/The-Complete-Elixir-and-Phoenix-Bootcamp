@@ -4,12 +4,26 @@ defmodule Discuss.AuthController do
 
   alias Discuss.User
 
-  def callback(%{assigns: %{ueberauth_auth: auth}} = conn, params) do
-    user_params = %{token: auth.credentials.token, email: auth.info.email, provider: "github"}
-    changeset = User.changeset(%User{}, user_params)
+  def callback(%{assigns: %{ueberauth_auth: auth}} = conn, %{"provider" => provider}) do
+    params = %{
+      token: auth.credentials.token,
+      email: auth.info.email,
+      provider: provider,
+      name: auth.info.name,
+      first_name: auth.info.first_name,
+      last_name: auth.info.last_name
+    }
+
+    changeset = User.changeset(%User{}, params)
 
     signin(conn, changeset)
-  end
+ end
+
+ def callback(%{assigns: %{ueberauth_failure: _fails}} = conn, _params) do
+   conn
+   |> put_flash(:error, "Failed to authenticate.")
+   |> redirect(to: topic_path(conn, :index))
+ end
 
   def signout(conn, _params) do
     conn
